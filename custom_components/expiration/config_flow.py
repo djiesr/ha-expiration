@@ -100,7 +100,7 @@ class ExpirationOptionsFlow(OptionsFlow):
                 errors[CONF_ALERT_THRESHOLD] = "threshold_too_high"
             else:
                 return self.async_create_entry(
-                    title="",
+                    title=self._config_entry.title or "",
                     data={
                         CONF_DAYS_MAX: user_input[CONF_DAYS_MAX],
                         CONF_ALERT_THRESHOLD: user_input[CONF_ALERT_THRESHOLD],

@@ -1,0 +1,63 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Ajouter un élément à suivre",
+        "description": "Configurez un nouvel élément dont vous souhaitez suivre l'expiration.",
+        "data": {
+          "name": "Nom de l'élément",
+          "days_max": "Jours avant expiration",
+          "alert_threshold": "Seuil d'alerte (jours avant expiration)"
+        },
+        "data_description": {
+          "name": "Un nom descriptif pour l'élément, ex : Éponge cuisine.",
+          "days_max": "Nombre de jours avant que cet élément doit être remplacé ou vérifié.",
+          "alert_threshold": "Nombre de jours avant expiration à partir duquel le statut passe en avertissement."
+        }
+      }
+    },
+    "error": {
+      "name_required": "Le nom ne peut pas être vide.",
+      "days_min_one": "Le nombre de jours avant expiration doit être au moins 1.",
+      "threshold_too_high": "Le seuil d'alerte doit être inférieur au nombre de jours avant expiration."
+    },
+    "abort": {
+      "already_configured": "Un élément avec ce nom est déjà configuré."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Modifier les paramètres",
+        "description": "Ajustez les paramètres de cet élément.",
+        "data": {
+          "days_max": "Jours avant expiration",
+          "alert_threshold": "Seuil d'alerte (jours avant expiration)"
+        },
+        "data_description": {
+          "days_max": "Nombre de jours avant que cet élément doit être remplacé ou vérifié.",
+          "alert_threshold": "Nombre de jours avant expiration à partir duquel le statut passe en avertissement."
+        }
+      }
+    },
+    "error": {
+      "days_min_one": "Le nombre de jours avant expiration doit être au moins 1.",
+      "threshold_too_high": "Le seuil d'alerte doit être inférieur au nombre de jours avant expiration."
+    }
+  },
+  "entity": {
+    "sensor": {
+      "days_remaining": {
+        "name": "Jours restants"
+      },
+      "percentage_elapsed": {
+        "name": "Temps écoulé"
+      }
+    },
+    "button": {
+      "reset": {
+        "name": "Réinitialiser"
+      }
+    }
+  }
+}

@@ -77,7 +77,8 @@ class ExpirationDaysSensor(ExpirationBaseSensor):
         """Initialize the days sensor."""
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_days_remaining"
-        self._attr_name = f"{entry.data[CONF_NAME]} Days Remaining"
+        self._attr_translation_key = "days_remaining"
+        self._attr_has_entity_name = True
         self._attr_native_unit_of_measurement = UnitOfTime.DAYS
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_icon = "mdi:calendar-clock"
@@ -124,7 +125,8 @@ class ExpirationPercentSensor(ExpirationBaseSensor):
         """Initialize the percent sensor."""
         super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_percentage_elapsed"
-        self._attr_name = f"{entry.data[CONF_NAME]} Elapsed"
+        self._attr_translation_key = "percentage_elapsed"
+        self._attr_has_entity_name = True
         self._attr_native_unit_of_measurement = "%"
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_icon = "mdi:percent"
