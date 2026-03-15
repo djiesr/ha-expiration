@@ -60,12 +60,11 @@ class ExpirationCoordinator(DataUpdateCoordinator):
         today = date.today()
         last_reset = self.last_reset or today
 
-        elapsed_days = (today - last_reset).days
-        days_remaining = max(0, self.days_max - elapsed_days)
-        percentage_elapsed = min(100, round((elapsed_days / self.days_max) * 100, 1))
-        expiration_date = last_reset.replace(day=last_reset.day)
         from datetime import timedelta
 
+        elapsed_days = (today - last_reset).days
+        days_remaining = self.days_max - elapsed_days  # négatif si expiré
+        percentage_elapsed = min(100, round((elapsed_days / self.days_max) * 100, 1))
         expiration_date = last_reset + timedelta(days=self.days_max)
 
         return {
@@ -73,8 +72,8 @@ class ExpirationCoordinator(DataUpdateCoordinator):
             "percentage_elapsed": percentage_elapsed,
             "expiration_date": expiration_date.isoformat(),
             "last_reset": last_reset.isoformat(),
-            "is_expired": days_remaining == 0,
-            "is_warning": days_remaining <= self.alert_threshold and days_remaining > 0,
+            "is_expired": days_remaining < 0,
+            "is_warning": 0 <= days_remaining <= self.alert_threshold,
         }
 
     async def async_reset(self) -> None:
