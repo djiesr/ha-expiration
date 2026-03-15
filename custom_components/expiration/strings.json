@@ -1,0 +1,39 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Add an Expiration Item",
+        "description": "Configure a new item to track its expiration.",
+        "data": {
+          "name": "Item name",
+          "days_max": "Days until expiration",
+          "alert_threshold": "Alert threshold (days before expiration)"
+        }
+      }
+    },
+    "error": {
+      "name_required": "Name cannot be empty.",
+      "days_min_one": "Days until expiration must be at least 1.",
+      "threshold_too_high": "Alert threshold must be less than days until expiration.",
+      "already_configured": "An item with this name is already configured."
+    },
+    "abort": {
+      "already_configured": "This item is already configured."
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Update Expiration Settings",
+        "data": {
+          "days_max": "Days until expiration",
+          "alert_threshold": "Alert threshold (days before expiration)"
+        }
+      }
+    },
+    "error": {
+      "days_min_one": "Days until expiration must be at least 1.",
+      "threshold_too_high": "Alert threshold must be less than days until expiration."
+    }
+  }
+}

@@ -1,0 +1,12 @@
+{
+  "domain": "expiration",
+  "name": "Expiration",
+  "codeowners": ["@djiesr"],
+  "config_flow": true,
+  "documentation": "https://github.com/djiesr/ha-expiration",
+  "integration_type": "hub",
+  "iot_class": "local_push",
+  "issue_tracker": "https://github.com/djiesr/ha-expiration/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}
