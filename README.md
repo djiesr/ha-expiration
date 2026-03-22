@@ -10,9 +10,10 @@ Track expiration and replacement schedules for household items directly in Home 
 
 Add any item you want to track — sponges, filters, batteries, medications, etc. — and set how often it should be replaced. Each item gets:
 
-- A **days remaining** sensor
-- A **% elapsed** sensor
-- A **Reset button** to restart the counter
+- A **days remaining** sensor (with start/end dates in attributes)
+- A **% elapsed** sensor (integer %)
+- A **remaining usage** sensor (100% at start, counts down to 0%)
+- A **Reset button** to restart the counter (attributes: days remaining, end date)
 
 The reset date is persisted in Home Assistant's storage, so it survives restarts.
 
@@ -21,17 +22,24 @@ The reset date is persisted in Home Assistant's storage, so it survives restarts
 | Entity | Type | Example value |
 |--------|------|---------------|
 | `sensor.<name>_days_remaining` | Sensor | `9 days` |
-| `sensor.<name>_elapsed` | Sensor | `35 %` |
+| `sensor.<name>_elapsed` | Sensor | `35 %` (integer) |
+| `sensor.<name>_remaining_usage` | Sensor | `65 %` (100% → 0%) |
 | `button.<name>_reset` | Button | — |
 
 ### Sensor attributes
 
 ```yaml
+# Days remaining sensor attributes (also: start_date, end_date)
 last_reset: "2026-03-01"
 expiration_date: "2026-03-15"
+start_date: "2026-03-01"   # same as last_reset
+end_date: "2026-03-15"     # same as expiration_date
 days_max: 14
 alert_threshold: 3
 status: ok  # ok | warning | expired
+
+# Reset button attributes
+# days_remaining, end_date
 ```
 
 ## Installation

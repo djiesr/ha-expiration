@@ -52,6 +52,9 @@
       },
       "percentage_elapsed": {
         "name": "Elapsed"
+      },
+      "remaining_usage": {
+        "name": "Remaining usage"
       }
     },
     "button": {

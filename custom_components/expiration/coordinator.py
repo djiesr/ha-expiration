@@ -64,12 +64,19 @@ class ExpirationCoordinator(DataUpdateCoordinator):
 
         elapsed_days = (today - last_reset).days
         days_remaining = self.days_max - elapsed_days  # négatif si expiré
-        percentage_elapsed = min(100, round((elapsed_days / self.days_max) * 100, 1))
+        percentage_elapsed = min(
+            100, round((elapsed_days / self.days_max) * 100)
+        )
+        remaining_days_pos = max(0, days_remaining)
+        percentage_remaining = max(
+            0, min(100, round((remaining_days_pos / self.days_max) * 100))
+        )
         expiration_date = last_reset + timedelta(days=self.days_max)
 
         return {
             "days_remaining": days_remaining,
             "percentage_elapsed": percentage_elapsed,
+            "percentage_remaining": percentage_remaining,
             "expiration_date": expiration_date.isoformat(),
             "last_reset": last_reset.isoformat(),
             "is_expired": days_remaining < 0,

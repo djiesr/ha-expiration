@@ -13,8 +13,10 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .const import (
     ATTR_ALERT_THRESHOLD,
     ATTR_DAYS_MAX,
+    ATTR_END_DATE,
     ATTR_EXPIRATION_DATE,
     ATTR_LAST_RESET,
+    ATTR_START_DATE,
     DOMAIN,
 )
 from .coordinator import ExpirationCoordinator
@@ -32,6 +34,7 @@ async def async_setup_entry(
         [
             ExpirationDaysSensor(coordinator, entry),
             ExpirationPercentSensor(coordinator, entry),
+            ExpirationRemainingPercentSensor(coordinator, entry),
         ]
     )
 
@@ -105,6 +108,8 @@ class ExpirationDaysSensor(ExpirationBaseSensor):
         """Return extra attributes including status."""
         attrs = super().extra_state_attributes
         data = self.coordinator.data or {}
+        attrs[ATTR_START_DATE] = data.get("last_reset")
+        attrs[ATTR_END_DATE] = data.get("expiration_date")
         if data.get("is_expired"):
             attrs["status"] = "expired"
         elif data.get("is_warning"):
@@ -132,8 +137,33 @@ class ExpirationPercentSensor(ExpirationBaseSensor):
         self._attr_icon = "mdi:percent"
 
     @property
-    def native_value(self) -> float | None:
-        """Return the percentage of time elapsed."""
+    def native_value(self) -> int | None:
+        """Return the percentage of time elapsed (integer, no decimals)."""
         if self.coordinator.data:
             return self.coordinator.data["percentage_elapsed"]
+        return None
+
+
+class ExpirationRemainingPercentSensor(ExpirationBaseSensor):
+    """Sensor showing remaining usage percentage (100% at start, down to 0%)."""
+
+    def __init__(
+        self,
+        coordinator: ExpirationCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize the remaining usage sensor."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_remaining_usage"
+        self._attr_translation_key = "remaining_usage"
+        self._attr_has_entity_name = True
+        self._attr_native_unit_of_measurement = "%"
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_icon = "mdi:progress-clock"
+
+    @property
+    def native_value(self) -> int | None:
+        """Return the remaining usage percentage."""
+        if self.coordinator.data:
+            return self.coordinator.data["percentage_remaining"]
         return None

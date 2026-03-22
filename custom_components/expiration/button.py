@@ -10,7 +10,7 @@ from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import DOMAIN
+from .const import ATTR_DAYS_REMAINING, ATTR_END_DATE, DOMAIN
 from .coordinator import ExpirationCoordinator
 
 
@@ -45,6 +45,15 @@ class ExpirationResetButton(CoordinatorEntity[ExpirationCoordinator], ButtonEnti
             manufacturer="Expiration",
             model="Expiration Tracker",
         )
+
+    @property
+    def extra_state_attributes(self) -> dict[str, str | int | None]:
+        """Expose remaining days and end date on the button."""
+        data = self.coordinator.data or {}
+        return {
+            ATTR_DAYS_REMAINING: data.get("days_remaining"),
+            ATTR_END_DATE: data.get("expiration_date"),
+        }
 
     async def async_press(self) -> None:
         """Handle the button press — reset the timer."""
