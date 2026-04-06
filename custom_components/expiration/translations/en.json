@@ -43,6 +43,11 @@
       "already_configured": "An item with this name is already configured."
     }
   },
+  "device": {
+    "expiration_hub": {
+      "name": "Expiration Calendar"
+    }
+  },
   "options": {
     "step": {
       "init": {
@@ -91,7 +96,7 @@
     },
     "calendar": {
       "expiration_calendar": {
-        "name": "Calendar"
+        "name": "Shared calendar"
       }
     },
     "switch": {
