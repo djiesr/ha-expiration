@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import inspect
 import logging
 from types import MappingProxyType
+from typing import Any
 
 from homeassistant.config_entries import SOURCE_USER, ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -15,6 +17,30 @@ from .const import CONF_ENTRY_TYPE, DOMAIN, ENTRY_TYPE_HUB
 _LOGGER = logging.getLogger(__name__)
 
 HUB_UNIQUE_ID = "expiration_hub"
+
+
+def _build_hub_config_entry() -> ConfigEntry:
+    """Build a hub ConfigEntry compatible with the running Home Assistant version.
+
+    ConfigEntry.__init__ signature changes across HA releases (e.g. discovery_keys,
+    subentries_data). Only pass kwargs the current version accepts.
+    """
+    kwargs: dict[str, Any] = {
+        "version": 4,
+        "minor_version": 0,
+        "domain": DOMAIN,
+        "title": "Expiration",
+        "data": {CONF_ENTRY_TYPE: ENTRY_TYPE_HUB},
+        "options": {},
+        "unique_id": HUB_UNIQUE_ID,
+        "source": SOURCE_USER,
+    }
+    sig = inspect.signature(ConfigEntry.__init__)
+    if "discovery_keys" in sig.parameters:
+        kwargs["discovery_keys"] = MappingProxyType({})
+    if "subentries_data" in sig.parameters:
+        kwargs["subentries_data"] = None
+    return ConfigEntry(**kwargs)
 
 
 def hub_config_entry(hass: HomeAssistant) -> ConfigEntry | None:
@@ -54,18 +80,7 @@ async def async_ensure_hub_entry(hass: HomeAssistant) -> ConfigEntry | None:
 
         _LOGGER.info("Creating Expiration hub config entry for calendar")
 
-        entry = ConfigEntry(
-            version=4,
-            minor_version=0,
-            domain=DOMAIN,
-            title="Expiration",
-            data={CONF_ENTRY_TYPE: ENTRY_TYPE_HUB},
-            options={},
-            unique_id=HUB_UNIQUE_ID,
-            source=SOURCE_USER,
-            discovery_keys=MappingProxyType({}),
-            subentries_data=None,
-        )
+        entry = _build_hub_config_entry()
         await hass.config_entries.async_add(entry)
         hub_entry_id = entry.entry_id
         _migrate_calendar_entities_to_hub(hass, hub_entry_id)
