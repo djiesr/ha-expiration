@@ -2,26 +2,34 @@
   "config": {
     "step": {
       "user": {
-        "title": "Ajouter un élément à suivre",
-        "description": "Configurez un nouvel élément dont vous souhaitez suivre l'expiration.",
+        "title": "Calendrier Expiration",
+        "description": "Un calendrier partagé regroupera les dates d'échéance de tous vos éléments. Poursuivez pour ajouter le premier élément."
+      },
+      "item": {
+        "title": "Ajouter un élément",
+        "description": "Choisissez le mode jour ou heure, puis la période et le seuil d'alerte.",
         "data": {
           "name": "Nom de l'élément",
+          "mode": "Type de compte à rebours",
           "days_max": "Jours avant expiration",
-          "alert_threshold": "Seuil d'alerte (jours avant expiration)",
-          "hours_max": "Heures avant expiration (optionnel)"
+          "hours_max": "Heures avant expiration",
+          "alert_threshold": "Seuil d'alerte"
         },
         "data_description": {
           "name": "Un nom descriptif pour l'élément, ex : Éponge cuisine.",
-          "days_max": "Nombre de jours avant que cet élément doit être remplacé ou vérifié.",
-          "alert_threshold": "Nombre de jours avant expiration à partir duquel le statut passe en avertissement.",
-          "hours_max": "Si > 0, ajoute un capteur d'heures restantes et un événement calendrier à l'heure. Les capteurs en jours restent en jours."
+          "mode": "Jours : événements calendrier sur la journée et capteurs en jours. Heures : événement à l'heure et capteurs en heures.",
+          "days_max": "Mode jour — nombre de jours avant remplacement ou vérification.",
+          "hours_max": "Mode heure — durée totale en heures jusqu'à l'échéance (ex. 55).",
+          "alert_threshold": "Mode jour : jours avant l'échéance pour l'avertissement. Mode heure : heures avant l'échéance."
         }
       }
     },
     "error": {
       "name_required": "Le nom ne peut pas être vide.",
       "days_min_one": "Le nombre de jours avant expiration doit être au moins 1.",
-      "threshold_too_high": "Le seuil d'alerte doit être inférieur au nombre de jours avant expiration."
+      "hours_min_one": "Le nombre d'heures avant expiration doit être au moins 1.",
+      "threshold_too_high": "Le seuil d'alerte doit être inférieur au nombre de jours avant expiration.",
+      "threshold_hours_too_high": "Le seuil d'alerte doit être inférieur au nombre d'heures avant expiration."
     },
     "abort": {
       "already_configured": "Un élément avec ce nom est déjà configuré."
@@ -31,22 +39,26 @@
     "step": {
       "init": {
         "title": "Modifier les paramètres",
-        "description": "Ajustez les paramètres de cet élément.",
+        "description": "Ajustez le mode, la période et le seuil d'alerte.",
         "data": {
+          "mode": "Type de compte à rebours",
           "days_max": "Jours avant expiration",
-          "alert_threshold": "Seuil d'alerte (jours avant expiration)",
-          "hours_max": "Heures avant expiration (optionnel)"
+          "hours_max": "Heures avant expiration",
+          "alert_threshold": "Seuil d'alerte"
         },
         "data_description": {
-          "days_max": "Nombre de jours avant que cet élément doit être remplacé ou vérifié.",
-          "alert_threshold": "Nombre de jours avant expiration à partir duquel le statut passe en avertissement.",
-          "hours_max": "Si > 0, ajoute un capteur d'heures restantes et un événement calendrier à l'heure."
+          "mode": "Compte à rebours en jours ou en heures.",
+          "days_max": "Mode jour : jours avant expiration.",
+          "hours_max": "Mode heure : nombre total d'heures jusqu'à l'échéance.",
+          "alert_threshold": "Mode jour : jours avant l'échéance. Mode heure : heures avant l'échéance."
         }
       }
     },
     "error": {
       "days_min_one": "Le nombre de jours avant expiration doit être au moins 1.",
-      "threshold_too_high": "Le seuil d'alerte doit être inférieur au nombre de jours avant expiration."
+      "hours_min_one": "Le nombre d'heures avant expiration doit être au moins 1.",
+      "threshold_too_high": "Le seuil d'alerte doit être inférieur au nombre de jours avant expiration.",
+      "threshold_hours_too_high": "Le seuil d'alerte doit être inférieur au nombre d'heures avant expiration."
     }
   },
   "entity": {

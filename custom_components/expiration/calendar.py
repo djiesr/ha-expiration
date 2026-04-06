@@ -16,7 +16,7 @@ from homeassistant.helpers.dispatcher import async_dispatcher_connect
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_SHOW_IN_CALENDAR, DOMAIN
+from .const import CONF_SHOW_IN_CALENDAR, DOMAIN, MODE_HOUR
 from .coordinator import ExpirationCoordinator
 from .hub import ExpirationHub
 
@@ -48,7 +48,7 @@ def _build_due_event(coordinator: ExpirationCoordinator) -> CalendarEvent | None
     name = coordinator.item_name
     uid = f"{coordinator.entry_id}_due"
 
-    if coordinator.hours_max > 0:
+    if coordinator.mode == MODE_HOUR:
         exp = data.get("expiration_datetime")
         if not exp:
             return None

@@ -8,13 +8,18 @@ Track expiration and replacement schedules for household items directly in Home 
 
 ## What it does
 
-Add any item you want to track — sponges, filters, batteries, medications, etc. — and set how often it should be replaced. Each item gets:
+Add any item you want to track — sponges, filters, batteries, medications, etc. — and set how often it should be replaced.
 
-- A **days remaining** sensor (with start/end dates in attributes)
-- A **% elapsed** sensor (integer %)
-- A **remaining usage** sensor (100% at start, counts down to 0%)
-- Optionally **hours remaining** (if you set *Hours until expiration* when adding or in options)
-- A **Reset button** to restart the counter (attributes: days remaining, end date, last reset date/time)
+**First time you add the integration**, the wizard shows a short **calendar** introduction, then the form for your **first item**. **Adding another item later** goes straight to the item form.
+
+For each item you choose **day mode** or **hour mode**:
+
+- **Day mode**: **days remaining** sensor, **% elapsed**, **remaining usage %**, same behaviour as before (calendar: **all-day** event on the due date).
+- **Hour mode**: **hours remaining** sensor, **% elapsed**, **remaining usage %** (calendar: **timed** event at the due date/time). Thresholds are in **hours**.
+
+Common to all items:
+
+- A **Reset button** (attributes: days or hours remaining, end date, last reset date/time)
 
 The integration also exposes a **single shared calendar** entity listing due dates for all items, with a **master switch** (on the hub device) and a **per-item switch** to show or hide each item in that calendar.
 
@@ -24,10 +29,10 @@ The reset date/time is persisted in Home Assistant's storage, so it survives res
 
 | Entity | Type | Example value |
 |--------|------|---------------|
-| `sensor.<name>_days_remaining` | Sensor | `9 days` |
+| `sensor.<name>_days_remaining` | Sensor | `9 days` (day mode only) |
+| `sensor.<name>_hours_remaining` | Sensor | `12.5 h` (hour mode only) |
 | `sensor.<name>_elapsed` | Sensor | `35 %` (integer) |
 | `sensor.<name>_remaining_usage` | Sensor | `65 %` (100% → 0%) |
-| `sensor.<name>_hours_remaining` | Sensor | `12.5 h` (if hours configured) |
 | `switch.<name>_show_in_calendar` | Switch | Per-item visibility in the shared calendar |
 | `button.<name>_reset` | Button | — |
 | *(shared)* `calendar.*` | Calendar | One calendar for all items (device **Expiration**) |
@@ -73,13 +78,15 @@ status: ok  # ok | warning | expired
 1. Go to **Settings > Devices & Services**
 2. Click **+ Add Integration**
 3. Search for **Expiration**
-4. Fill in the form:
+4. **First run**: read the calendar intro, then fill in the **item** form.
+   - **Countdown type** — **Days** or **Hours**
    - **Item name** — e.g. `Kitchen Sponge`
-   - **Days until expiration** — e.g. `14`
-   - **Alert threshold** — number of days before expiration to trigger warning state (e.g. `3`)
-   - **Hours until expiration** (optional) — e.g. `75` for an hours-remaining sensor and a timed calendar event; day sensors stay in **days** only.
+   - **Days until expiration** / **Hours until expiration** — period (e.g. `14` days or `55` hours)
+   - **Alert threshold** — in **days** (day mode) or **hours** (hour mode) before due
 
-Repeat for each item you want to track. Each item creates its own device with sensors + button + per-item calendar switch. The **hub** device holds the shared calendar and the master calendar switch.
+To add more items: **Add integration → Expiration** again (or your usual flow); you go **directly** to the item form.
+
+Each item creates its own device with sensors + button + per-item calendar switch. The **hub** device holds the shared calendar and the master calendar switch.
 
 ## Dashboard example
 

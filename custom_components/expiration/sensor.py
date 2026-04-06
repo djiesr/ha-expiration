@@ -15,11 +15,14 @@ from .const import (
     ATTR_DAYS_MAX,
     ATTR_END_DATE,
     ATTR_EXPIRATION_DATE,
+    ATTR_HOURS_MAX,
     ATTR_LAST_RESET,
     ATTR_LAST_RESET_DATETIME,
     ATTR_START_DATE,
-    CONF_HOURS_MAX,
+    CONF_MODE,
     DOMAIN,
+    MODE_DAY,
+    MODE_HOUR,
 )
 from .coordinator import ExpirationCoordinator
 
@@ -32,13 +35,15 @@ async def async_setup_entry(
     """Set up Expiration sensors from a config entry."""
     coordinator: ExpirationCoordinator = hass.data[DOMAIN][entry.entry_id]
 
+    mode = entry.data.get(CONF_MODE, MODE_DAY)
     entities: list[SensorEntity] = [
-        ExpirationDaysSensor(coordinator, entry),
         ExpirationPercentSensor(coordinator, entry),
         ExpirationRemainingPercentSensor(coordinator, entry),
     ]
-    if entry.data.get(CONF_HOURS_MAX, 0) > 0:
-        entities.append(ExpirationHoursSensor(coordinator, entry))
+    if mode == MODE_DAY:
+        entities.insert(0, ExpirationDaysSensor(coordinator, entry))
+    else:
+        entities.insert(0, ExpirationHoursSensor(coordinator, entry))
 
     async_add_entities(entities)
 
@@ -65,13 +70,17 @@ class ExpirationBaseSensor(CoordinatorEntity[ExpirationCoordinator], SensorEntit
     def extra_state_attributes(self) -> dict:
         """Return common extra attributes."""
         data = self.coordinator.data or {}
-        return {
+        attrs: dict = {
             ATTR_LAST_RESET: data.get("last_reset"),
             ATTR_LAST_RESET_DATETIME: data.get("last_reset_datetime"),
             ATTR_EXPIRATION_DATE: data.get("expiration_date"),
-            ATTR_DAYS_MAX: self.coordinator.days_max,
             ATTR_ALERT_THRESHOLD: self.coordinator.alert_threshold,
         }
+        if self.coordinator.mode == MODE_DAY:
+            attrs[ATTR_DAYS_MAX] = self.coordinator.days_max
+        else:
+            attrs[ATTR_HOURS_MAX] = self.coordinator.hours_max
+        return attrs
 
 
 class ExpirationDaysSensor(ExpirationBaseSensor):
@@ -175,7 +184,7 @@ class ExpirationRemainingPercentSensor(ExpirationBaseSensor):
 
 
 class ExpirationHoursSensor(ExpirationBaseSensor):
-    """Sensor showing hours remaining (when hours_max is configured)."""
+    """Sensor showing hours remaining (hour mode)."""
 
     def __init__(
         self,
@@ -197,3 +206,28 @@ class ExpirationHoursSensor(ExpirationBaseSensor):
         if self.coordinator.data:
             return self.coordinator.data.get("hours_remaining")
         return None
+
+    @property
+    def icon(self) -> str:
+        """Return icon based on state."""
+        data = self.coordinator.data or {}
+        if data.get("is_expired"):
+            return "mdi:timer-remove"
+        if data.get("is_warning"):
+            return "mdi:timer-alert"
+        return "mdi:timer-sand"
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return extra attributes including status."""
+        attrs = super().extra_state_attributes
+        data = self.coordinator.data or {}
+        attrs[ATTR_START_DATE] = data.get("last_reset")
+        attrs[ATTR_END_DATE] = data.get("expiration_date")
+        if data.get("is_expired"):
+            attrs["status"] = "expired"
+        elif data.get("is_warning"):
+            attrs["status"] = "warning"
+        else:
+            attrs["status"] = "ok"
+        return attrs

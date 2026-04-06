@@ -13,9 +13,12 @@ from .const import (
     CONF_ALERT_THRESHOLD,
     CONF_DAYS_MAX,
     CONF_HOURS_MAX,
+    CONF_MODE,
     CONF_SHOW_IN_CALENDAR,
     DEFAULT_ALERT_THRESHOLD,
     DOMAIN,
+    MODE_DAY,
+    MODE_HOUR,
 )
 from .coordinator import ExpirationCoordinator
 from .hub import ExpirationHub
@@ -32,20 +35,36 @@ PLATFORMS: list[Platform] = [
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:
     """Migrate config entries."""
-    if config_entry.version > 2:
+    if config_entry.version > 3:
         return False
 
-    if config_entry.version < 2:
-        data = dict(config_entry.data)
+    entry = config_entry
+    if entry.version < 2:
+        data = dict(entry.data)
         data.setdefault(CONF_HOURS_MAX, 0)
-        options = dict(config_entry.options)
+        options = dict(entry.options)
         options.setdefault(CONF_SHOW_IN_CALENDAR, True)
         hass.config_entries.async_update_entry(
-            config_entry,
+            entry,
             data=data,
             options=options,
             version=2,
         )
+        entry = hass.config_entries.async_get_entry(entry.entry_id)
+
+    if entry is None:
+        return False
+
+    if entry.version < 3:
+        data = dict(entry.data)
+        data.setdefault(CONF_HOURS_MAX, 0)
+        if data.get(CONF_HOURS_MAX, 0) > 0:
+            data[CONF_MODE] = MODE_HOUR
+            data[CONF_DAYS_MAX] = 0
+        else:
+            data[CONF_MODE] = MODE_DAY
+            data[CONF_HOURS_MAX] = 0
+        hass.config_entries.async_update_entry(entry, data=data, version=3)
 
     return True
 
@@ -60,13 +79,22 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
     hub: ExpirationHub = hass.data[DOMAIN]["hub"]
 
+    mode = entry.data.get(CONF_MODE, MODE_DAY)
+    days_max = entry.data.get(CONF_DAYS_MAX, 14)
+    hours_max = entry.data.get(CONF_HOURS_MAX, 0)
+    if mode == MODE_HOUR:
+        days_max = 0
+    else:
+        hours_max = 0
+
     coordinator = ExpirationCoordinator(
         hass=hass,
         entry_id=entry.entry_id,
         name=entry.data[CONF_NAME],
-        days_max=entry.data[CONF_DAYS_MAX],
+        mode=mode,
+        days_max=days_max,
         alert_threshold=entry.data.get(CONF_ALERT_THRESHOLD, DEFAULT_ALERT_THRESHOLD),
-        hours_max=entry.data.get(CONF_HOURS_MAX, 0),
+        hours_max=hours_max,
     )
 
     await coordinator.async_setup()

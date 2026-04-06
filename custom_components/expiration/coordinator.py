@@ -11,7 +11,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from .const import DOMAIN, STORAGE_VERSION, STORAGE_KEY_PREFIX
+from .const import DOMAIN, MODE_DAY, MODE_HOUR, STORAGE_VERSION, STORAGE_KEY_PREFIX
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -24,6 +24,7 @@ class ExpirationCoordinator(DataUpdateCoordinator):
         hass: HomeAssistant,
         entry_id: str,
         name: str,
+        mode: str,
         days_max: int,
         alert_threshold: int,
         hours_max: int,
@@ -36,6 +37,7 @@ class ExpirationCoordinator(DataUpdateCoordinator):
         )
         self.entry_id = entry_id
         self.item_name = name
+        self.mode = mode
         self.days_max = days_max
         self.alert_threshold = alert_threshold
         self.hours_max = hours_max
@@ -75,6 +77,13 @@ class ExpirationCoordinator(DataUpdateCoordinator):
         last_reset = self.last_reset_dt or now
         last_reset = dt_util.as_local(last_reset)
 
+        if self.mode == MODE_HOUR:
+            return self._update_hour_mode(now, last_reset)
+
+        return self._update_day_mode(now, last_reset)
+
+    def _update_day_mode(self, now: datetime, last_reset: datetime) -> dict:
+        """Day-based countdown (original behaviour)."""
         last_reset_date = last_reset.date()
         today = now.date()
 
@@ -87,21 +96,7 @@ class ExpirationCoordinator(DataUpdateCoordinator):
         )
         expiration_date = last_reset_date + timedelta(days=self.days_max)
 
-        expiration_datetime: datetime | None = None
-        hours_remaining: float | None = None
-
-        if self.hours_max > 0:
-            due = last_reset + timedelta(hours=self.hours_max)
-            due = dt_util.as_local(due)
-            expiration_datetime = due
-            hours_remaining = round((due - now).total_seconds() / 3600.0, 1)
-
-        expired_days = days_remaining < 0
-        expired_hours = bool(
-            self.hours_max > 0 and hours_remaining is not None and hours_remaining < 0
-        )
-        is_expired = expired_days or expired_hours
-
+        is_expired = days_remaining < 0
         result = {
             "days_remaining": days_remaining,
             "percentage_elapsed": percentage_elapsed,
@@ -109,12 +104,47 @@ class ExpirationCoordinator(DataUpdateCoordinator):
             "expiration_date": expiration_date.isoformat(),
             "last_reset": last_reset_date.isoformat(),
             "last_reset_datetime": last_reset.isoformat(),
-            "expiration_datetime": expiration_datetime.isoformat()
-            if expiration_datetime
-            else None,
-            "hours_remaining": hours_remaining,
+            "expiration_datetime": None,
+            "hours_remaining": None,
             "is_expired": is_expired,
             "is_warning": (0 <= days_remaining <= self.alert_threshold) and not is_expired,
+        }
+        async_dispatcher_send(self.hass, f"{DOMAIN}_calendar_update")
+        return result
+
+    def _update_hour_mode(self, now: datetime, last_reset: datetime) -> dict:
+        """Hour-based countdown."""
+        elapsed_hours = (now - last_reset).total_seconds() / 3600.0
+        hours_remaining = round(float(self.hours_max) - elapsed_hours, 1)
+        percentage_elapsed = min(
+            100, round((elapsed_hours / float(self.hours_max)) * 100)
+        )
+        remaining_hours_pos = max(0.0, float(hours_remaining))
+        percentage_remaining = max(
+            0,
+            min(
+                100,
+                round((remaining_hours_pos / float(self.hours_max)) * 100),
+            ),
+        )
+        due = last_reset + timedelta(hours=float(self.hours_max))
+        due = dt_util.as_local(due)
+        expiration_date = due.date()
+
+        is_expired = hours_remaining < 0
+        is_warning = (0 <= hours_remaining <= float(self.alert_threshold)) and not is_expired
+
+        result = {
+            "days_remaining": None,
+            "percentage_elapsed": percentage_elapsed,
+            "percentage_remaining": percentage_remaining,
+            "expiration_date": expiration_date.isoformat(),
+            "last_reset": last_reset.date().isoformat(),
+            "last_reset_datetime": last_reset.isoformat(),
+            "expiration_datetime": due.isoformat(),
+            "hours_remaining": hours_remaining,
+            "is_expired": is_expired,
+            "is_warning": is_warning,
         }
         async_dispatcher_send(self.hass, f"{DOMAIN}_calendar_update")
         return result
