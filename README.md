@@ -144,6 +144,16 @@ automation:
         message: "The kitchen sponge needs to be replaced in {{ states('sensor.kitchen_sponge_days_remaining') }} days!"
 ```
 
+## Troubleshooting
+
+### Log: `Failed to load integration for translation: Integration 'expiration' not found`
+
+This comes from Home Assistant when the **translation loader** asks for the `expiration` integration **before** the loader has registered `custom_components/expiration` (or while the folder is temporarily unavailable). It is often **a single line** after a restart or a HACS update.
+
+Check that `config/custom_components/expiration/` exists with `manifest.json` and `translations/en.json`. Restart Home Assistant. If you use **safe mode** or **recovery**, custom components are not loaded — the warning can appear then.
+
+English and French strings live only in **`translations/en.json`** and **`translations/fr.json`** (per [custom integration i18n](https://developers.home-assistant.io/docs/internationalization/custom_integration)).
+
 ## Requirements
 
 - Home Assistant 2023.5.0 or newer
