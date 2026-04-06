@@ -18,6 +18,8 @@ from homeassistant.core import callback
 from .const import (
     CONF_ALERT_THRESHOLD,
     CONF_DAYS_MAX,
+    CONF_HOURS_MAX,
+    CONF_SHOW_IN_CALENDAR,
     DEFAULT_ALERT_THRESHOLD,
     DOMAIN,
 )
@@ -26,7 +28,7 @@ from .const import (
 class ExpirationConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Expiration."""
 
-    VERSION = 1
+    VERSION = 2
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
@@ -54,7 +56,9 @@ class ExpirationConfigFlow(ConfigFlow, domain=DOMAIN):
                         CONF_NAME: name,
                         CONF_DAYS_MAX: user_input[CONF_DAYS_MAX],
                         CONF_ALERT_THRESHOLD: user_input[CONF_ALERT_THRESHOLD],
+                        CONF_HOURS_MAX: user_input.get(CONF_HOURS_MAX, 0),
                     },
+                    options={CONF_SHOW_IN_CALENDAR: True},
                 )
 
         schema = vol.Schema(
@@ -64,6 +68,7 @@ class ExpirationConfigFlow(ConfigFlow, domain=DOMAIN):
                 vol.Required(
                     CONF_ALERT_THRESHOLD, default=DEFAULT_ALERT_THRESHOLD
                 ): vol.All(int, vol.Range(min=0)),
+                vol.Optional(CONF_HOURS_MAX, default=0): vol.All(int, vol.Range(min=0)),
             }
         )
 
@@ -99,18 +104,28 @@ class ExpirationOptionsFlow(OptionsFlow):
             elif user_input[CONF_ALERT_THRESHOLD] >= user_input[CONF_DAYS_MAX]:
                 errors[CONF_ALERT_THRESHOLD] = "threshold_too_high"
             else:
-                return self.async_create_entry(
-                    title=self._config_entry.title or "",
+                keep_calendar = self._config_entry.options.get(
+                    CONF_SHOW_IN_CALENDAR, True
+                )
+                self.hass.config_entries.async_update_entry(
+                    self._config_entry,
                     data={
+                        **self._config_entry.data,
                         CONF_DAYS_MAX: user_input[CONF_DAYS_MAX],
                         CONF_ALERT_THRESHOLD: user_input[CONF_ALERT_THRESHOLD],
+                        CONF_HOURS_MAX: user_input.get(CONF_HOURS_MAX, 0),
                     },
+                )
+                return self.async_create_entry(
+                    title="",
+                    data={CONF_SHOW_IN_CALENDAR: keep_calendar},
                 )
 
         current_days_max = self._config_entry.data.get(CONF_DAYS_MAX, 14)
         current_threshold = self._config_entry.data.get(
             CONF_ALERT_THRESHOLD, DEFAULT_ALERT_THRESHOLD
         )
+        current_hours_max = self._config_entry.data.get(CONF_HOURS_MAX, 0)
 
         schema = vol.Schema(
             {
@@ -118,6 +133,9 @@ class ExpirationOptionsFlow(OptionsFlow):
                     int, vol.Range(min=1)
                 ),
                 vol.Required(CONF_ALERT_THRESHOLD, default=current_threshold): vol.All(
+                    int, vol.Range(min=0)
+                ),
+                vol.Optional(CONF_HOURS_MAX, default=current_hours_max): vol.All(
                     int, vol.Range(min=0)
                 ),
             }

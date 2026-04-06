@@ -7,12 +7,14 @@
         "data": {
           "name": "Item name",
           "days_max": "Days until expiration",
-          "alert_threshold": "Alert threshold (days before expiration)"
+          "alert_threshold": "Alert threshold (days before expiration)",
+          "hours_max": "Hours until expiration (optional)"
         },
         "data_description": {
           "name": "A descriptive name for the item, e.g. Kitchen Sponge.",
           "days_max": "How many days before this item needs to be replaced or checked.",
-          "alert_threshold": "How many days before expiration the status switches to warning."
+          "alert_threshold": "How many days before expiration the status switches to warning.",
+          "hours_max": "If set (>0), adds an hours-remaining sensor and a timed calendar event. Day sensors stay in days."
         }
       }
     },
@@ -32,11 +34,13 @@
         "description": "Adjust the settings for this item.",
         "data": {
           "days_max": "Days until expiration",
-          "alert_threshold": "Alert threshold (days before expiration)"
+          "alert_threshold": "Alert threshold (days before expiration)",
+          "hours_max": "Hours until expiration (optional)"
         },
         "data_description": {
           "days_max": "How many days before this item needs to be replaced or checked.",
-          "alert_threshold": "How many days before expiration the status switches to warning."
+          "alert_threshold": "How many days before expiration the status switches to warning.",
+          "hours_max": "If set (>0), adds an hours-remaining sensor and a timed calendar event."
         }
       }
     },
@@ -55,11 +59,27 @@
       },
       "remaining_usage": {
         "name": "Remaining usage"
+      },
+      "hours_remaining": {
+        "name": "Hours remaining"
       }
     },
     "button": {
       "reset": {
         "name": "Reset"
+      }
+    },
+    "calendar": {
+      "expiration_calendar": {
+        "name": "Expiration"
+      }
+    },
+    "switch": {
+      "calendar_master": {
+        "name": "Calendar events"
+      },
+      "calendar_item": {
+        "name": "Show in calendar"
       }
     }
   }

@@ -16,7 +16,9 @@ from .const import (
     ATTR_END_DATE,
     ATTR_EXPIRATION_DATE,
     ATTR_LAST_RESET,
+    ATTR_LAST_RESET_DATETIME,
     ATTR_START_DATE,
+    CONF_HOURS_MAX,
     DOMAIN,
 )
 from .coordinator import ExpirationCoordinator
@@ -30,13 +32,15 @@ async def async_setup_entry(
     """Set up Expiration sensors from a config entry."""
     coordinator: ExpirationCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    async_add_entities(
-        [
-            ExpirationDaysSensor(coordinator, entry),
-            ExpirationPercentSensor(coordinator, entry),
-            ExpirationRemainingPercentSensor(coordinator, entry),
-        ]
-    )
+    entities: list[SensorEntity] = [
+        ExpirationDaysSensor(coordinator, entry),
+        ExpirationPercentSensor(coordinator, entry),
+        ExpirationRemainingPercentSensor(coordinator, entry),
+    ]
+    if entry.data.get(CONF_HOURS_MAX, 0) > 0:
+        entities.append(ExpirationHoursSensor(coordinator, entry))
+
+    async_add_entities(entities)
 
 
 class ExpirationBaseSensor(CoordinatorEntity[ExpirationCoordinator], SensorEntity):
@@ -63,6 +67,7 @@ class ExpirationBaseSensor(CoordinatorEntity[ExpirationCoordinator], SensorEntit
         data = self.coordinator.data or {}
         return {
             ATTR_LAST_RESET: data.get("last_reset"),
+            ATTR_LAST_RESET_DATETIME: data.get("last_reset_datetime"),
             ATTR_EXPIRATION_DATE: data.get("expiration_date"),
             ATTR_DAYS_MAX: self.coordinator.days_max,
             ATTR_ALERT_THRESHOLD: self.coordinator.alert_threshold,
@@ -166,4 +171,29 @@ class ExpirationRemainingPercentSensor(ExpirationBaseSensor):
         """Return the remaining usage percentage."""
         if self.coordinator.data:
             return self.coordinator.data["percentage_remaining"]
+        return None
+
+
+class ExpirationHoursSensor(ExpirationBaseSensor):
+    """Sensor showing hours remaining (when hours_max is configured)."""
+
+    def __init__(
+        self,
+        coordinator: ExpirationCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize the hours sensor."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_hours_remaining"
+        self._attr_translation_key = "hours_remaining"
+        self._attr_has_entity_name = True
+        self._attr_native_unit_of_measurement = UnitOfTime.HOURS
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_icon = "mdi:timer-sand"
+
+    @property
+    def native_value(self) -> float | None:
+        """Return hours remaining."""
+        if self.coordinator.data:
+            return self.coordinator.data.get("hours_remaining")
         return None

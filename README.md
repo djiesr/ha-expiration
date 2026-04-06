@@ -13,9 +13,12 @@ Add any item you want to track — sponges, filters, batteries, medications, etc
 - A **days remaining** sensor (with start/end dates in attributes)
 - A **% elapsed** sensor (integer %)
 - A **remaining usage** sensor (100% at start, counts down to 0%)
-- A **Reset button** to restart the counter (attributes: days remaining, end date)
+- Optionally **hours remaining** (if you set *Hours until expiration* when adding or in options)
+- A **Reset button** to restart the counter (attributes: days remaining, end date, last reset date/time)
 
-The reset date is persisted in Home Assistant's storage, so it survives restarts.
+The integration also exposes a **single shared calendar** entity listing due dates for all items, with a **master switch** (on the hub device) and a **per-item switch** to show or hide each item in that calendar.
+
+The reset date/time is persisted in Home Assistant's storage, so it survives restarts.
 
 ## Entities per item
 
@@ -24,7 +27,11 @@ The reset date is persisted in Home Assistant's storage, so it survives restarts
 | `sensor.<name>_days_remaining` | Sensor | `9 days` |
 | `sensor.<name>_elapsed` | Sensor | `35 %` (integer) |
 | `sensor.<name>_remaining_usage` | Sensor | `65 %` (100% → 0%) |
+| `sensor.<name>_hours_remaining` | Sensor | `12.5 h` (if hours configured) |
+| `switch.<name>_show_in_calendar` | Switch | Per-item visibility in the shared calendar |
 | `button.<name>_reset` | Button | — |
+| *(shared)* `calendar.*` | Calendar | One calendar for all items (device **Expiration**) |
+| *(shared)* `switch.*` | Switch | Master: enable/disable all calendar events (same hub device) |
 
 ### Sensor attributes
 
@@ -39,7 +46,9 @@ alert_threshold: 3
 status: ok  # ok | warning | expired
 
 # Reset button attributes
-# days_remaining, end_date
+# days_remaining, end_date, last_reset_datetime
+
+# Calendar: all-day due date at end of day (days mode), or timed event at due hour (hours mode)
 ```
 
 ## Installation
@@ -68,8 +77,9 @@ status: ok  # ok | warning | expired
    - **Item name** — e.g. `Kitchen Sponge`
    - **Days until expiration** — e.g. `14`
    - **Alert threshold** — number of days before expiration to trigger warning state (e.g. `3`)
+   - **Hours until expiration** (optional) — e.g. `75` for an hours-remaining sensor and a timed calendar event; day sensors stay in **days** only.
 
-Repeat for each item you want to track. Each item creates its own device with 3 entities.
+Repeat for each item you want to track. Each item creates its own device with sensors + button + per-item calendar switch. The **hub** device holds the shared calendar and the master calendar switch.
 
 ## Dashboard example
 

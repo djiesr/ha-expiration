@@ -7,12 +7,14 @@
         "data": {
           "name": "Nom de l'élément",
           "days_max": "Jours avant expiration",
-          "alert_threshold": "Seuil d'alerte (jours avant expiration)"
+          "alert_threshold": "Seuil d'alerte (jours avant expiration)",
+          "hours_max": "Heures avant expiration (optionnel)"
         },
         "data_description": {
           "name": "Un nom descriptif pour l'élément, ex : Éponge cuisine.",
           "days_max": "Nombre de jours avant que cet élément doit être remplacé ou vérifié.",
-          "alert_threshold": "Nombre de jours avant expiration à partir duquel le statut passe en avertissement."
+          "alert_threshold": "Nombre de jours avant expiration à partir duquel le statut passe en avertissement.",
+          "hours_max": "Si > 0, ajoute un capteur d'heures restantes et un événement calendrier à l'heure. Les capteurs en jours restent en jours."
         }
       }
     },
@@ -32,11 +34,13 @@
         "description": "Ajustez les paramètres de cet élément.",
         "data": {
           "days_max": "Jours avant expiration",
-          "alert_threshold": "Seuil d'alerte (jours avant expiration)"
+          "alert_threshold": "Seuil d'alerte (jours avant expiration)",
+          "hours_max": "Heures avant expiration (optionnel)"
         },
         "data_description": {
           "days_max": "Nombre de jours avant que cet élément doit être remplacé ou vérifié.",
-          "alert_threshold": "Nombre de jours avant expiration à partir duquel le statut passe en avertissement."
+          "alert_threshold": "Nombre de jours avant expiration à partir duquel le statut passe en avertissement.",
+          "hours_max": "Si > 0, ajoute un capteur d'heures restantes et un événement calendrier à l'heure."
         }
       }
     },
@@ -55,11 +59,27 @@
       },
       "remaining_usage": {
         "name": "Utilisation restante"
+      },
+      "hours_remaining": {
+        "name": "Heures restantes"
       }
     },
     "button": {
       "reset": {
         "name": "Réinitialiser"
+      }
+    },
+    "calendar": {
+      "expiration_calendar": {
+        "name": "Expiration"
+      }
+    },
+    "switch": {
+      "calendar_master": {
+        "name": "Événements calendrier"
+      },
+      "calendar_item": {
+        "name": "Afficher dans le calendrier"
       }
     }
   }
