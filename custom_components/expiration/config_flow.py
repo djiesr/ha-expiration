@@ -18,29 +18,46 @@ from homeassistant.core import callback
 from .const import (
     CONF_ALERT_THRESHOLD,
     CONF_DAYS_MAX,
+    CONF_ENTRY_TYPE,
     CONF_HOURS_MAX,
     CONF_MODE,
     CONF_SHOW_IN_CALENDAR,
     DEFAULT_ALERT_THRESHOLD,
     DOMAIN,
+    ENTRY_TYPE_HUB,
+    ENTRY_TYPE_ITEM,
     MODE_DAY,
     MODE_HOUR,
 )
+from .hub_entry import async_ensure_hub_entry, hub_config_entry
 
 
 class ExpirationConfigFlow(ConfigFlow, domain=DOMAIN):
     """Handle a config flow for Expiration."""
 
-    VERSION = 3
+    VERSION = 4
+
+    def __init__(self) -> None:
+        """Initialize flow."""
+        super().__init__()
+        self._item_name: str = ""
+        self._item_mode: str = MODE_DAY
+
+    @staticmethod
+    @callback
+    def async_supports_options_flow(config_entry: ConfigEntry) -> bool:
+        """Options apply to item entries only (not the hub)."""
+        return config_entry.data.get(CONF_ENTRY_TYPE) != ENTRY_TYPE_HUB
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Step 1: calendar intro (first integration only), then item setup."""
-        if self.hass.config_entries.async_entries(DOMAIN):
+        """Ensure hub exists, then continue to item steps."""
+        if hub_config_entry(self.hass):
             return await self.async_step_item()
 
         if user_input is not None:
+            await async_ensure_hub_entry(self.hass)
             return await self.async_step_item()
 
         return self.async_show_form(
@@ -51,19 +68,47 @@ class ExpirationConfigFlow(ConfigFlow, domain=DOMAIN):
     async def async_step_item(
         self, user_input: dict[str, Any] | None = None
     ) -> ConfigFlowResult:
-        """Step 2: configure the expiration item (day or hour mode)."""
+        """Step 1: item name and mode."""
         errors: dict[str, str] = {}
+
+        if hub_config_entry(self.hass) is None:
+            await async_ensure_hub_entry(self.hass)
 
         if user_input is not None:
             name = user_input[CONF_NAME].strip()
             mode = user_input[CONF_MODE]
 
-            await self.async_set_unique_id(name.lower().replace(" ", "_"))
-            self._abort_if_unique_id_configured()
-
             if not name:
                 errors[CONF_NAME] = "name_required"
-            elif mode == MODE_DAY:
+            else:
+                await self.async_set_unique_id(name.lower().replace(" ", "_"))
+                self._abort_if_unique_id_configured()
+                self._item_name = name
+                self._item_mode = mode
+                return await self.async_step_item_period()
+
+        schema = vol.Schema(
+            {
+                vol.Required(CONF_NAME): str,
+                vol.Required(CONF_MODE, default=MODE_DAY): vol.In([MODE_DAY, MODE_HOUR]),
+            }
+        )
+
+        return self.async_show_form(
+            step_id="item",
+            data_schema=schema,
+            errors=errors,
+        )
+
+    async def async_step_item_period(
+        self, user_input: dict[str, Any] | None = None
+    ) -> ConfigFlowResult:
+        """Step 2: period and alert threshold."""
+        errors: dict[str, str] = {}
+        mode = self._item_mode
+
+        if user_input is not None:
+            if mode == MODE_DAY:
                 if user_input[CONF_DAYS_MAX] < 1:
                     errors[CONF_DAYS_MAX] = "days_min_one"
                 elif user_input[CONF_ALERT_THRESHOLD] >= user_input[CONF_DAYS_MAX]:
@@ -76,7 +121,8 @@ class ExpirationConfigFlow(ConfigFlow, domain=DOMAIN):
 
             if not errors:
                 data: dict[str, Any] = {
-                    CONF_NAME: name,
+                    CONF_ENTRY_TYPE: ENTRY_TYPE_ITEM,
+                    CONF_NAME: self._item_name,
                     CONF_MODE: mode,
                     CONF_ALERT_THRESHOLD: user_input[CONF_ALERT_THRESHOLD],
                 }
@@ -88,25 +134,32 @@ class ExpirationConfigFlow(ConfigFlow, domain=DOMAIN):
                     data[CONF_HOURS_MAX] = user_input[CONF_HOURS_MAX]
 
                 return self.async_create_entry(
-                    title=name,
+                    title=self._item_name,
                     data=data,
                     options={CONF_SHOW_IN_CALENDAR: True},
                 )
 
-        schema = vol.Schema(
-            {
-                vol.Required(CONF_NAME): str,
-                vol.Required(CONF_MODE, default=MODE_DAY): vol.In([MODE_DAY, MODE_HOUR]),
-                vol.Required(CONF_DAYS_MAX, default=14): vol.All(int, vol.Range(min=1)),
-                vol.Required(CONF_HOURS_MAX, default=48): vol.All(int, vol.Range(min=1)),
-                vol.Required(
-                    CONF_ALERT_THRESHOLD, default=DEFAULT_ALERT_THRESHOLD
-                ): vol.All(int, vol.Range(min=0)),
-            }
-        )
+        if mode == MODE_DAY:
+            schema = vol.Schema(
+                {
+                    vol.Required(CONF_DAYS_MAX, default=14): vol.All(int, vol.Range(min=1)),
+                    vol.Required(
+                        CONF_ALERT_THRESHOLD, default=DEFAULT_ALERT_THRESHOLD
+                    ): vol.All(int, vol.Range(min=0)),
+                }
+            )
+        else:
+            schema = vol.Schema(
+                {
+                    vol.Required(CONF_HOURS_MAX, default=48): vol.All(int, vol.Range(min=1)),
+                    vol.Required(
+                        CONF_ALERT_THRESHOLD, default=DEFAULT_ALERT_THRESHOLD
+                    ): vol.All(int, vol.Range(min=0)),
+                }
+            )
 
         return self.async_show_form(
-            step_id="item",
+            step_id="item_period",
             data_schema=schema,
             errors=errors,
         )

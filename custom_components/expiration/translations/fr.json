@@ -2,22 +2,30 @@
   "config": {
     "step": {
       "user": {
-        "title": "Calendrier Expiration",
-        "description": "Un calendrier partagé regroupera les dates d'échéance de tous vos éléments. Poursuivez pour ajouter le premier élément."
+        "title": "Hub Expiration",
+        "description": "Poursuivez pour créer le hub Expiration partagé (calendrier et interrupteur maître), puis configurez votre premier élément."
       },
       "item": {
         "title": "Ajouter un élément",
-        "description": "Choisissez le mode jour ou heure, puis la période et le seuil d'alerte.",
+        "description": "Choisissez un nom et le mode jour ou heure. La période et le seuil d'alerte se règlent à l'étape suivante.",
         "data": {
           "name": "Nom de l'élément",
-          "mode": "Type de compte à rebours",
+          "mode": "Type de compte à rebours"
+        },
+        "data_description": {
+          "name": "Un nom descriptif pour l'élément, ex : Éponge cuisine.",
+          "mode": "Jours : événements calendrier sur la journée et capteurs en jours. Heures : événement à l'heure et capteurs en heures."
+        }
+      },
+      "item_period": {
+        "title": "Période et alerte",
+        "description": "Définissez la durée jusqu'à l'expiration et le moment de l'avertissement.",
+        "data": {
           "days_max": "Jours avant expiration",
           "hours_max": "Heures avant expiration",
           "alert_threshold": "Seuil d'alerte"
         },
         "data_description": {
-          "name": "Un nom descriptif pour l'élément, ex : Éponge cuisine.",
-          "mode": "Jours : événements calendrier sur la journée et capteurs en jours. Heures : événement à l'heure et capteurs en heures.",
           "days_max": "Mode jour — nombre de jours avant remplacement ou vérification.",
           "hours_max": "Mode heure — durée totale en heures jusqu'à l'échéance (ex. 55).",
           "alert_threshold": "Mode jour : jours avant l'échéance pour l'avertissement. Mode heure : heures avant l'échéance."

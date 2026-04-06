@@ -14,7 +14,9 @@ from .const import (
     ATTR_DAYS_REMAINING,
     ATTR_END_DATE,
     ATTR_LAST_RESET_DATETIME,
+    CONF_ENTRY_TYPE,
     DOMAIN,
+    ENTRY_TYPE_HUB,
 )
 from .coordinator import ExpirationCoordinator
 
@@ -25,6 +27,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Expiration button from a config entry."""
+    if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_HUB:
+        return
+
     coordinator: ExpirationCoordinator = hass.data[DOMAIN][entry.entry_id]
     async_add_entities([ExpirationResetButton(coordinator, entry)])
 

@@ -6,12 +6,13 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_NAME
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import CONF_SHOW_IN_CALENDAR, DOMAIN
+from .const import CONF_ENTRY_TYPE, CONF_SHOW_IN_CALENDAR, DOMAIN, ENTRY_TYPE_HUB
 from .coordinator import ExpirationCoordinator
 from .hub import ExpirationHub
 
@@ -26,18 +27,20 @@ async def async_setup_entry(
         return
 
     hub: ExpirationHub = hass.data[DOMAIN]["hub"]
-    coordinator: ExpirationCoordinator = hass.data[DOMAIN][entry.entry_id]
 
-    entities: list[SwitchEntity] = [
-        ExpirationItemCalendarSwitch(coordinator, entry),
-    ]
-    if not hass.data[DOMAIN].get("_expiration_hub_switch_added"):
-        entities.insert(0, ExpirationHubCalendarSwitch(hass, hub))
+    if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_HUB:
+        if hass.data[DOMAIN].get("_expiration_hub_switch_added"):
+            return
+        registry = er.async_get(hass)
+        if registry.async_get_entity_id("switch", DOMAIN, "expiration_hub_calendar_enabled"):
+            hass.data[DOMAIN]["_expiration_hub_switch_added"] = True
+            return
+        async_add_entities([ExpirationHubCalendarSwitch(hass, hub)])
         hass.data[DOMAIN]["_expiration_hub_switch_added"] = True
-        if hass.data[DOMAIN].get("hub_owner_entry_id") is None:
-            hass.data[DOMAIN]["hub_owner_entry_id"] = entry.entry_id
+        return
 
-    async_add_entities(entities)
+    coordinator: ExpirationCoordinator = hass.data[DOMAIN][entry.entry_id]
+    async_add_entities([ExpirationItemCalendarSwitch(coordinator, entry)])
 
 
 class ExpirationHubCalendarSwitch(SwitchEntity):

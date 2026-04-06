@@ -13,10 +13,17 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.dispatcher import async_dispatcher_connect
+from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.util import dt as dt_util
 
-from .const import CONF_SHOW_IN_CALENDAR, DOMAIN, MODE_HOUR
+from .const import (
+    CONF_ENTRY_TYPE,
+    CONF_SHOW_IN_CALENDAR,
+    DOMAIN,
+    ENTRY_TYPE_HUB,
+    MODE_HOUR,
+)
 from .coordinator import ExpirationCoordinator
 from .hub import ExpirationHub
 
@@ -27,16 +34,21 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up calendar (single entity for the whole integration)."""
+    if entry.data.get(CONF_ENTRY_TYPE) != ENTRY_TYPE_HUB:
+        return
     if DOMAIN not in hass.data or "hub" not in hass.data[DOMAIN]:
         return
     if hass.data[DOMAIN].get("_expiration_calendar_entity_added"):
         return
 
+    registry = er.async_get(hass)
+    if registry.async_get_entity_id("calendar", DOMAIN, "expiration_aggregated_calendar"):
+        hass.data[DOMAIN]["_expiration_calendar_entity_added"] = True
+        return
+
     hub: ExpirationHub = hass.data[DOMAIN]["hub"]
     async_add_entities([ExpirationAggregatedCalendar(hass, hub)])
     hass.data[DOMAIN]["_expiration_calendar_entity_added"] = True
-    if hass.data[DOMAIN].get("hub_owner_entry_id") is None:
-        hass.data[DOMAIN]["hub_owner_entry_id"] = entry.entry_id
 
 
 def _build_due_event(coordinator: ExpirationCoordinator) -> CalendarEvent | None:

@@ -2,6 +2,10 @@
 
 DOMAIN = "expiration"
 
+CONF_ENTRY_TYPE = "entry_type"
+ENTRY_TYPE_HUB = "hub"
+ENTRY_TYPE_ITEM = "item"
+
 CONF_DAYS_MAX = "days_max"
 CONF_ALERT_THRESHOLD = "alert_threshold"
 CONF_HOURS_MAX = "hours_max"

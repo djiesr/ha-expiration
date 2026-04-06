@@ -19,8 +19,10 @@ from .const import (
     ATTR_LAST_RESET,
     ATTR_LAST_RESET_DATETIME,
     ATTR_START_DATE,
+    CONF_ENTRY_TYPE,
     CONF_MODE,
     DOMAIN,
+    ENTRY_TYPE_HUB,
     MODE_DAY,
     MODE_HOUR,
 )
@@ -33,6 +35,9 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up Expiration sensors from a config entry."""
+    if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_HUB:
+        return
+
     coordinator: ExpirationCoordinator = hass.data[DOMAIN][entry.entry_id]
 
     mode = entry.data.get(CONF_MODE, MODE_DAY)
