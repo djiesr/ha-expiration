@@ -91,7 +91,7 @@
     },
     "calendar": {
       "expiration_calendar": {
-        "name": "Expiration"
+        "name": "Calendrier"
       }
     },
     "switch": {
