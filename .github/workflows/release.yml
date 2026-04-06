@@ -18,7 +18,7 @@ jobs:
 
       - name: Create zip archive
         run: |
-          zip -r ha-expiration.zip custom_components/expiration
+          cd custom_components/expiration && zip -r ../../ha-expiration.zip .
 
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v2
