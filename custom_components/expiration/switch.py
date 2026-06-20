@@ -51,7 +51,7 @@ class ExpirationHubCalendarSwitch(SwitchEntity):
         self.hass = hass
         self._hub = hub
         self._attr_unique_id = "expiration_hub_calendar_enabled"
-        self._attr_has_entity_name = False
+        self._attr_has_entity_name = True
         self._attr_translation_key = "calendar_master"
         self._attr_icon = "mdi:calendar-multiple"
         self._attr_device_info = DeviceInfo(

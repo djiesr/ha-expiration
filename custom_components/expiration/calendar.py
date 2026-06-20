@@ -106,11 +106,12 @@ class ExpirationAggregatedCalendar(CalendarEntity):
         self._hub = hub
         self.entity_description = CalendarEntityDescription(
             key="expiration_calendar",
-            name="Shared calendar",
+            has_entity_name=True,
+            translation_key="expiration_calendar",
             initial_color="#4285F4",
         )
         self._attr_unique_id = "expiration_aggregated_calendar"
-        self._attr_has_entity_name = False
+        self._attr_has_entity_name = True
         self._attr_translation_key = "expiration_calendar"
         self._attr_should_poll = False
         self._attr_device_info = DeviceInfo(
