@@ -18,6 +18,10 @@ The integration uses a **hub** config entry (shared **calendar** + **master swit
 2. **Item step 1** — **Item name** and **Countdown type** (**Days** or **Hours**): day mode uses day-based sensors and all-day calendar events; hour mode uses hour-based sensors and a timed calendar event.
 3. **Item step 2** — **Period** and **Alert threshold** (labels depend on mode: days vs hours until expiration, and threshold in days or hours before due).
 
+<img width="584" height="467" alt="image" src="https://github.com/user-attachments/assets/981bf69e-f6ac-48d6-820d-6ab514c17deb" />
+
+<img width="579" height="381" alt="image" src="https://github.com/user-attachments/assets/32dfa330-9fef-49b3-b560-e48e2d1f3bf0" />
+
 **Adding another item later** (hub already exists): you go **directly** to the item steps (step 1 + step 2).
 
 For each item:
