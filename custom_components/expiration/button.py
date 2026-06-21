@@ -26,15 +26,41 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Expiration button from a config entry."""
+    """Set up Expiration buttons from a config entry."""
     if entry.data.get(CONF_ENTRY_TYPE) == ENTRY_TYPE_HUB:
         return
 
     coordinator: ExpirationCoordinator = hass.data[DOMAIN][entry.entry_id]
-    async_add_entities([ExpirationResetButton(coordinator, entry)])
+    async_add_entities(
+        [
+            ExpirationResetButton(coordinator, entry),
+            ExpirationStepBackButton(coordinator, entry),
+            ExpirationStepForwardButton(coordinator, entry),
+        ]
+    )
 
 
-class ExpirationResetButton(CoordinatorEntity[ExpirationCoordinator], ButtonEntity):
+class ExpirationButtonBase(CoordinatorEntity[ExpirationCoordinator], ButtonEntity):
+    """Base class for Expiration buttons."""
+
+    def __init__(
+        self,
+        coordinator: ExpirationCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize the button."""
+        super().__init__(coordinator)
+        self._entry = entry
+        self._attr_has_entity_name = True
+        self._attr_device_info = DeviceInfo(
+            identifiers={(DOMAIN, entry.entry_id)},
+            name=entry.data[CONF_NAME],
+            manufacturer="Expiration",
+            model="Expiration Tracker",
+        )
+
+
+class ExpirationResetButton(ExpirationButtonBase):
     """Button to reset the expiration timer."""
 
     def __init__(
@@ -43,18 +69,10 @@ class ExpirationResetButton(CoordinatorEntity[ExpirationCoordinator], ButtonEnti
         entry: ConfigEntry,
     ) -> None:
         """Initialize the reset button."""
-        super().__init__(coordinator)
-        self._entry = entry
+        super().__init__(coordinator, entry)
         self._attr_unique_id = f"{entry.entry_id}_reset"
         self._attr_translation_key = "reset"
-        self._attr_has_entity_name = True
         self._attr_icon = "mdi:restart"
-        self._attr_device_info = DeviceInfo(
-            identifiers={(DOMAIN, entry.entry_id)},
-            name=entry.data[CONF_NAME],
-            manufacturer="Expiration",
-            model="Expiration Tracker",
-        )
 
     @property
     def extra_state_attributes(self) -> dict[str, str | int | None]:
@@ -69,3 +87,41 @@ class ExpirationResetButton(CoordinatorEntity[ExpirationCoordinator], ButtonEnti
     async def async_press(self) -> None:
         """Handle the button press — reset the timer."""
         await self.coordinator.async_reset()
+
+
+class ExpirationStepBackButton(ExpirationButtonBase):
+    """Button to move last reset one day/hour earlier."""
+
+    def __init__(
+        self,
+        coordinator: ExpirationCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize the step back button."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_step_back"
+        self._attr_translation_key = "step_back"
+        self._attr_icon = "mdi:chevron-left"
+
+    async def async_press(self) -> None:
+        """Move last reset one unit earlier."""
+        await self.coordinator.async_step_last_reset_back()
+
+
+class ExpirationStepForwardButton(ExpirationButtonBase):
+    """Button to move last reset one day/hour later."""
+
+    def __init__(
+        self,
+        coordinator: ExpirationCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize the step forward button."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_step_forward"
+        self._attr_translation_key = "step_forward"
+        self._attr_icon = "mdi:chevron-right"
+
+    async def async_press(self) -> None:
+        """Move last reset one unit later."""
+        await self.coordinator.async_step_last_reset_forward()

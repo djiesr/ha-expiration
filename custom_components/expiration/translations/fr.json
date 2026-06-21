@@ -88,11 +88,23 @@
       },
       "hours_remaining": {
         "name": "Heures restantes"
+      },
+      "cycle_period": {
+        "name": "Durée du cycle"
+      },
+      "time_elapsed": {
+        "name": "Durée écoulée"
       }
     },
     "button": {
       "reset": {
         "name": "Réinitialiser"
+      },
+      "step_back": {
+        "name": "Reculer"
+      },
+      "step_forward": {
+        "name": "Avancer"
       }
     },
     "calendar": {

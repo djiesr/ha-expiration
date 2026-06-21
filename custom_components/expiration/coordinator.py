@@ -4,8 +4,10 @@ from __future__ import annotations
 
 from datetime import date, datetime, timedelta, time
 import logging
+from typing import Any, Callable
 
-from homeassistant.core import HomeAssistant
+from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
@@ -16,7 +18,7 @@ from .const import DOMAIN, MODE_DAY, MODE_HOUR, STORAGE_VERSION, STORAGE_KEY_PRE
 _LOGGER = logging.getLogger(__name__)
 
 
-class ExpirationCoordinator(DataUpdateCoordinator):
+class ExpirationCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     """Manages storage and state for a single expiration item."""
 
     def __init__(
@@ -30,10 +32,12 @@ class ExpirationCoordinator(DataUpdateCoordinator):
         hours_max: int,
     ) -> None:
         """Initialize the coordinator."""
+        update_interval = timedelta(hours=1) if mode == MODE_HOUR else None
         super().__init__(
             hass,
             _LOGGER,
             name=f"{DOMAIN}_{name}",
+            update_interval=update_interval,
         )
         self.entry_id = entry_id
         self.item_name = name
@@ -45,6 +49,7 @@ class ExpirationCoordinator(DataUpdateCoordinator):
         storage_key = f"{STORAGE_KEY_PREFIX}.{entry_id}"
         self._store: Store = Store(hass, STORAGE_VERSION, storage_key)
         self.last_reset_dt: datetime | None = None
+        self._unsub_midnight: Callable[[], None] | None = None
 
     async def async_setup(self) -> None:
         """Load persisted data from storage."""
@@ -68,10 +73,20 @@ class ExpirationCoordinator(DataUpdateCoordinator):
         else:
             self.last_reset_dt = dt_util.now()
 
+        if self.mode == MODE_DAY:
+
+            @callback
+            def _handle_midnight(_now: datetime) -> None:
+                self.hass.async_create_task(self.async_refresh())
+
+            self._unsub_midnight = async_track_time_change(
+                self.hass, _handle_midnight, hour=0, minute=0, second=0
+            )
+
         await self._save()
         await self.async_refresh()
 
-    async def _async_update_data(self) -> dict:
+    async def _async_update_data(self) -> dict[str, Any]:
         """Calculate current expiration state."""
         now = dt_util.now()
         last_reset = self.last_reset_dt or now
@@ -82,7 +97,7 @@ class ExpirationCoordinator(DataUpdateCoordinator):
 
         return self._update_day_mode(now, last_reset)
 
-    def _update_day_mode(self, now: datetime, last_reset: datetime) -> dict:
+    def _update_day_mode(self, now: datetime, last_reset: datetime) -> dict[str, Any]:
         """Day-based countdown (original behaviour)."""
         last_reset_date = last_reset.date()
         today = now.date()
@@ -99,6 +114,9 @@ class ExpirationCoordinator(DataUpdateCoordinator):
         is_expired = days_remaining < 0
         result = {
             "days_remaining": days_remaining,
+            "elapsed_days": elapsed_days,
+            "elapsed_hours": None,
+            "cycle_period": self.days_max,
             "percentage_elapsed": percentage_elapsed,
             "percentage_remaining": percentage_remaining,
             "expiration_date": expiration_date.isoformat(),
@@ -112,7 +130,7 @@ class ExpirationCoordinator(DataUpdateCoordinator):
         async_dispatcher_send(self.hass, f"{DOMAIN}_calendar_update")
         return result
 
-    def _update_hour_mode(self, now: datetime, last_reset: datetime) -> dict:
+    def _update_hour_mode(self, now: datetime, last_reset: datetime) -> dict[str, Any]:
         """Hour-based countdown."""
         elapsed_hours = (now - last_reset).total_seconds() / 3600.0
         hours_remaining = round(float(self.hours_max) - elapsed_hours, 1)
@@ -136,6 +154,9 @@ class ExpirationCoordinator(DataUpdateCoordinator):
 
         result = {
             "days_remaining": None,
+            "elapsed_days": None,
+            "elapsed_hours": round(elapsed_hours, 1),
+            "cycle_period": self.hours_max,
             "percentage_elapsed": percentage_elapsed,
             "percentage_remaining": percentage_remaining,
             "expiration_date": expiration_date.isoformat(),
@@ -152,6 +173,29 @@ class ExpirationCoordinator(DataUpdateCoordinator):
     async def async_reset(self) -> None:
         """Reset the timer to now."""
         self.last_reset_dt = dt_util.now()
+        await self._save()
+        await self.async_refresh()
+
+    async def async_step_last_reset_back(self) -> None:
+        """Move last reset one day/hour earlier (more elapsed time)."""
+        last = dt_util.as_local(self.last_reset_dt or dt_util.now())
+        if self.mode == MODE_HOUR:
+            self.last_reset_dt = last - timedelta(hours=1)
+        else:
+            self.last_reset_dt = dt_util.start_of_local_day(last - timedelta(days=1))
+        await self._save()
+        await self.async_refresh()
+
+    async def async_step_last_reset_forward(self) -> None:
+        """Move last reset one day/hour later, capped at now."""
+        last = dt_util.as_local(self.last_reset_dt or dt_util.now())
+        now = dt_util.now()
+        if self.mode == MODE_HOUR:
+            candidate = last + timedelta(hours=1)
+            self.last_reset_dt = candidate if candidate <= now else now
+        else:
+            candidate = dt_util.start_of_local_day(last + timedelta(days=1))
+            self.last_reset_dt = candidate if candidate <= now else now
         await self._save()
         await self.async_refresh()
 

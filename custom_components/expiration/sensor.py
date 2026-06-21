@@ -6,7 +6,7 @@ from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_NAME, UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo
+from homeassistant.helpers.entity import DeviceInfo, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -42,6 +42,8 @@ async def async_setup_entry(
 
     mode = entry.data.get(CONF_MODE, MODE_DAY)
     entities: list[SensorEntity] = [
+        ExpirationCyclePeriodSensor(coordinator, entry),
+        ExpirationElapsedSensor(coordinator, entry),
         ExpirationPercentSensor(coordinator, entry),
         ExpirationRemainingPercentSensor(coordinator, entry),
     ]
@@ -136,6 +138,67 @@ class ExpirationDaysSensor(ExpirationBaseSensor):
         else:
             attrs["status"] = "ok"
         return attrs
+
+
+class ExpirationCyclePeriodSensor(ExpirationBaseSensor):
+    """Sensor showing configured cycle length (days or hours)."""
+
+    def __init__(
+        self,
+        coordinator: ExpirationCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize the cycle period sensor."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_cycle_period"
+        self._attr_translation_key = "cycle_period"
+        self._attr_has_entity_name = True
+        self._attr_entity_category = EntityCategory.CONFIG
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_icon = "mdi:repeat"
+        mode = entry.data.get(CONF_MODE, MODE_DAY)
+        if mode == MODE_HOUR:
+            self._attr_native_unit_of_measurement = UnitOfTime.HOURS
+        else:
+            self._attr_native_unit_of_measurement = UnitOfTime.DAYS
+
+    @property
+    def native_value(self) -> int | float | None:
+        """Return the configured cycle period."""
+        if self.coordinator.data:
+            return self.coordinator.data.get("cycle_period")
+        return None
+
+
+class ExpirationElapsedSensor(ExpirationBaseSensor):
+    """Sensor showing elapsed time since last reset."""
+
+    def __init__(
+        self,
+        coordinator: ExpirationCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize the elapsed time sensor."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_time_elapsed"
+        self._attr_translation_key = "time_elapsed"
+        self._attr_has_entity_name = True
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_icon = "mdi:history"
+        mode = entry.data.get(CONF_MODE, MODE_DAY)
+        if mode == MODE_HOUR:
+            self._attr_native_unit_of_measurement = UnitOfTime.HOURS
+        else:
+            self._attr_native_unit_of_measurement = UnitOfTime.DAYS
+
+    @property
+    def native_value(self) -> int | float | None:
+        """Return elapsed days or hours since last reset."""
+        if not self.coordinator.data:
+            return None
+        if self.coordinator.mode == MODE_HOUR:
+            return self.coordinator.data.get("elapsed_hours")
+        return self.coordinator.data.get("elapsed_days")
 
 
 class ExpirationPercentSensor(ExpirationBaseSensor):
