@@ -42,6 +42,7 @@ async def async_setup_entry(
     mode = entry.data.get(CONF_MODE, MODE_DAY)
 
     entities: list[SensorEntity] = [
+        ExpirationCyclePeriodSensor(coordinator, entry),
         ExpirationElapsedSensor(coordinator, entry),
         ExpirationPercentSensor(coordinator, entry),
         ExpirationRemainingPercentSensor(coordinator, entry),
@@ -87,6 +88,32 @@ class ExpirationBaseSensor(CoordinatorEntity[ExpirationCoordinator], SensorEntit
         else:
             attrs[ATTR_HOURS_MAX] = self.coordinator.hours_max
         return attrs
+
+
+class ExpirationCyclePeriodSensor(ExpirationBaseSensor):
+    """Sensor showing configured cycle length (mirrors the editable number)."""
+
+    def __init__(
+        self,
+        coordinator: ExpirationCoordinator,
+        entry: ConfigEntry,
+    ) -> None:
+        """Initialize the cycle period sensor."""
+        super().__init__(coordinator, entry)
+        self._attr_unique_id = f"{entry.entry_id}_cycle_period_display"
+        self._attr_translation_key = "cycle_period"
+        self._attr_has_entity_name = True
+        self._attr_state_class = SensorStateClass.MEASUREMENT
+        self._attr_icon = "mdi:repeat"
+        if entry.data.get(CONF_MODE, MODE_DAY) == MODE_HOUR:
+            self._attr_native_unit_of_measurement = UnitOfTime.HOURS
+        else:
+            self._attr_native_unit_of_measurement = UnitOfTime.DAYS
+
+    @property
+    def native_value(self) -> int | None:
+        """Return configured cycle length as a whole number."""
+        return self.coordinator.cycle_limit()
 
 
 class ExpirationDaysSensor(ExpirationBaseSensor):

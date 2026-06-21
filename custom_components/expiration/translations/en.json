@@ -86,6 +86,9 @@
       "time_elapsed": {
         "name": "Time elapsed"
       },
+      "cycle_period": {
+        "name": "Cycle period"
+      },
       "percentage_elapsed": {
         "name": "Elapsed"
       },
