@@ -6,6 +6,7 @@ from datetime import date, datetime, timedelta, time
 import logging
 from typing import Any, Callable
 
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.event import async_track_time_change
 from homeassistant.helpers.storage import Store
@@ -13,7 +14,16 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.util import dt as dt_util
 from homeassistant.helpers.dispatcher import async_dispatcher_send
 
-from .const import DOMAIN, MODE_DAY, MODE_HOUR, STORAGE_VERSION, STORAGE_KEY_PREFIX
+from .const import (
+    CONF_ALERT_THRESHOLD,
+    CONF_DAYS_MAX,
+    CONF_HOURS_MAX,
+    DOMAIN,
+    MODE_DAY,
+    MODE_HOUR,
+    STORAGE_VERSION,
+    STORAGE_KEY_PREFIX,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -103,20 +113,21 @@ class ExpirationCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         today = now.date()
 
         elapsed_days = (today - last_reset_date).days
-        days_remaining = self.days_max - elapsed_days
-        percentage_elapsed = min(100, round((elapsed_days / self.days_max) * 100))
+        days_max = max(1, self.days_max)
+        days_remaining = days_max - elapsed_days
+        percentage_elapsed = min(100, round((elapsed_days / days_max) * 100))
         remaining_days_pos = max(0, days_remaining)
         percentage_remaining = max(
-            0, min(100, round((remaining_days_pos / self.days_max) * 100))
+            0, min(100, round((remaining_days_pos / days_max) * 100))
         )
-        expiration_date = last_reset_date + timedelta(days=self.days_max)
+        expiration_date = last_reset_date + timedelta(days=days_max)
 
         is_expired = days_remaining < 0
         result = {
             "days_remaining": days_remaining,
             "elapsed_days": elapsed_days,
             "elapsed_hours": None,
-            "cycle_period": self.days_max,
+            "cycle_period": days_max,
             "percentage_elapsed": percentage_elapsed,
             "percentage_remaining": percentage_remaining,
             "expiration_date": expiration_date.isoformat(),
@@ -133,19 +144,20 @@ class ExpirationCoordinator(DataUpdateCoordinator[dict[str, Any]]):
     def _update_hour_mode(self, now: datetime, last_reset: datetime) -> dict[str, Any]:
         """Hour-based countdown."""
         elapsed_hours = (now - last_reset).total_seconds() / 3600.0
-        hours_remaining = round(float(self.hours_max) - elapsed_hours, 1)
+        hours_max = max(1, self.hours_max)
+        hours_remaining = round(float(hours_max) - elapsed_hours, 1)
         percentage_elapsed = min(
-            100, round((elapsed_hours / float(self.hours_max)) * 100)
+            100, round((elapsed_hours / float(hours_max)) * 100)
         )
         remaining_hours_pos = max(0.0, float(hours_remaining))
         percentage_remaining = max(
             0,
             min(
                 100,
-                round((remaining_hours_pos / float(self.hours_max)) * 100),
+                round((remaining_hours_pos / float(hours_max)) * 100),
             ),
         )
-        due = last_reset + timedelta(hours=float(self.hours_max))
+        due = last_reset + timedelta(hours=float(hours_max))
         due = dt_util.as_local(due)
         expiration_date = due.date()
 
@@ -156,7 +168,7 @@ class ExpirationCoordinator(DataUpdateCoordinator[dict[str, Any]]):
             "days_remaining": None,
             "elapsed_days": None,
             "elapsed_hours": round(elapsed_hours, 1),
-            "cycle_period": self.hours_max,
+            "cycle_period": hours_max,
             "percentage_elapsed": percentage_elapsed,
             "percentage_remaining": percentage_remaining,
             "expiration_date": expiration_date.isoformat(),
@@ -196,6 +208,72 @@ class ExpirationCoordinator(DataUpdateCoordinator[dict[str, Any]]):
         else:
             candidate = dt_util.start_of_local_day(last + timedelta(days=1))
             self.last_reset_dt = candidate if candidate <= now else now
+        await self._save()
+        await self.async_refresh()
+
+    def cycle_limit(self) -> int:
+        """Return configured cycle length for the active mode."""
+        if self.mode == MODE_HOUR:
+            return max(1, self.hours_max)
+        return max(1, self.days_max)
+
+    def current_elapsed(self) -> float:
+        """Return elapsed days or hours since last reset."""
+        now = dt_util.now()
+        last = dt_util.as_local(self.last_reset_dt or now)
+        if self.mode == MODE_HOUR:
+            return max(0.0, (now - last).total_seconds() / 3600.0)
+        return float(max(0, (now.date() - last.date()).days))
+
+    def _apply_elapsed(self, elapsed: float) -> None:
+        """Set last_reset from elapsed amount (clamped to cycle)."""
+        cycle = float(self.cycle_limit())
+        elapsed_clamped = max(0.0, min(elapsed, cycle))
+        now = dt_util.now()
+        if self.mode == MODE_HOUR:
+            self.last_reset_dt = now - timedelta(hours=elapsed_clamped)
+        else:
+            self.last_reset_dt = dt_util.start_of_local_day(
+                now - timedelta(days=int(elapsed_clamped))
+            )
+
+    async def async_set_cycle_period(self, entry: ConfigEntry, value: float) -> None:
+        """Update cycle length; adjust last reset if elapsed exceeds new cycle."""
+        new_cycle = max(1, int(value))
+        elapsed = self.current_elapsed()
+        if elapsed > new_cycle:
+            self._apply_elapsed(new_cycle)
+
+        data = dict(entry.data)
+        if self.mode == MODE_HOUR:
+            self.hours_max = new_cycle
+            data[CONF_HOURS_MAX] = new_cycle
+        else:
+            self.days_max = new_cycle
+            data[CONF_DAYS_MAX] = new_cycle
+
+        threshold = data.get(CONF_ALERT_THRESHOLD, 0)
+        if threshold >= new_cycle:
+            threshold = max(0, new_cycle - 1)
+            data[CONF_ALERT_THRESHOLD] = threshold
+            self.alert_threshold = threshold
+
+        self.hass.config_entries.async_update_entry(entry, data=data)
+        await self._save()
+        await self.async_refresh()
+
+    async def async_set_elapsed(self, value: float) -> None:
+        """Set elapsed time (0..cycle); updates last reset."""
+        self._apply_elapsed(value)
+        await self._save()
+        await self.async_refresh()
+
+    async def async_set_remaining(self, value: float) -> None:
+        """Set remaining time (0..cycle); elapsed = cycle - remaining."""
+        cycle = float(self.cycle_limit())
+        remaining = max(0.0, min(float(value), cycle))
+        elapsed = cycle - remaining
+        self._apply_elapsed(elapsed)
         await self._save()
         await self.async_refresh()
 

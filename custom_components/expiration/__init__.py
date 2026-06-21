@@ -28,7 +28,12 @@ from .hub_entry import async_ensure_hub_entry
 _LOGGER = logging.getLogger(__name__)
 
 HUB_PLATFORMS: list[Platform] = [Platform.CALENDAR, Platform.SWITCH]
-ITEM_PLATFORMS: list[Platform] = [Platform.SENSOR, Platform.BUTTON, Platform.SWITCH]
+ITEM_PLATFORMS: list[Platform] = [
+    Platform.SENSOR,
+    Platform.NUMBER,
+    Platform.BUTTON,
+    Platform.SWITCH,
+]
 
 
 async def async_migrate_entry(hass: HomeAssistant, config_entry: ConfigEntry) -> bool:

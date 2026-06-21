@@ -77,14 +77,16 @@
   },
   "entity": {
     "sensor": {
-      "days_remaining": {
-        "name": "Days Remaining"
-      },
       "percentage_elapsed": {
         "name": "Elapsed"
       },
       "remaining_usage": {
         "name": "Remaining usage"
+      }
+    },
+    "number": {
+      "days_remaining": {
+        "name": "Days Remaining"
       },
       "hours_remaining": {
         "name": "Hours remaining"
