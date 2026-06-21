@@ -6,7 +6,7 @@ from homeassistant.components.sensor import SensorEntity, SensorStateClass
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_NAME, UnitOfTime
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import DeviceInfo, EntityCategory
+from homeassistant.helpers.entity import DeviceInfo
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
@@ -153,7 +153,6 @@ class ExpirationCyclePeriodSensor(ExpirationBaseSensor):
         self._attr_unique_id = f"{entry.entry_id}_cycle_period"
         self._attr_translation_key = "cycle_period"
         self._attr_has_entity_name = True
-        self._attr_entity_category = EntityCategory.CONFIG
         self._attr_state_class = SensorStateClass.MEASUREMENT
         self._attr_icon = "mdi:repeat"
         mode = entry.data.get(CONF_MODE, MODE_DAY)
@@ -165,9 +164,9 @@ class ExpirationCyclePeriodSensor(ExpirationBaseSensor):
     @property
     def native_value(self) -> int | float | None:
         """Return the configured cycle period."""
-        if self.coordinator.data:
-            return self.coordinator.data.get("cycle_period")
-        return None
+        if self.coordinator.mode == MODE_HOUR:
+            return self.coordinator.hours_max
+        return self.coordinator.days_max
 
 
 class ExpirationElapsedSensor(ExpirationBaseSensor):
