@@ -239,7 +239,7 @@ class ExpirationCoordinator(DataUpdateCoordinator[dict[str, Any]]):
 
     async def async_set_cycle_period(self, entry: ConfigEntry, value: float) -> None:
         """Update cycle length; adjust last reset if elapsed exceeds new cycle."""
-        new_cycle = max(1, int(value))
+        new_cycle = max(1, int(round(value)))
         elapsed = self.current_elapsed()
         if elapsed > new_cycle:
             self._apply_elapsed(new_cycle)

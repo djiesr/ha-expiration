@@ -77,6 +77,15 @@
   },
   "entity": {
     "sensor": {
+      "days_remaining": {
+        "name": "Days Remaining"
+      },
+      "hours_remaining": {
+        "name": "Hours remaining"
+      },
+      "time_elapsed": {
+        "name": "Time elapsed"
+      },
       "percentage_elapsed": {
         "name": "Elapsed"
       },
@@ -85,17 +94,8 @@
       }
     },
     "number": {
-      "days_remaining": {
-        "name": "Days Remaining"
-      },
-      "hours_remaining": {
-        "name": "Hours remaining"
-      },
       "cycle_period": {
         "name": "Cycle period"
-      },
-      "time_elapsed": {
-        "name": "Time elapsed"
       }
     },
     "button": {

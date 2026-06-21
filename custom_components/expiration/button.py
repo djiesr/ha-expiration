@@ -90,7 +90,7 @@ class ExpirationResetButton(ExpirationButtonBase):
 
 
 class ExpirationStepBackButton(ExpirationButtonBase):
-    """Button to move last reset one day/hour earlier."""
+    """Button to increase remaining time by one day/hour."""
 
     def __init__(
         self,
@@ -104,12 +104,12 @@ class ExpirationStepBackButton(ExpirationButtonBase):
         self._attr_icon = "mdi:chevron-left"
 
     async def async_press(self) -> None:
-        """Move last reset one unit earlier."""
-        await self.coordinator.async_step_last_reset_back()
+        """Increase remaining by moving last reset later."""
+        await self.coordinator.async_step_last_reset_forward()
 
 
 class ExpirationStepForwardButton(ExpirationButtonBase):
-    """Button to move last reset one day/hour later."""
+    """Button to decrease remaining time by one day/hour."""
 
     def __init__(
         self,
@@ -123,5 +123,5 @@ class ExpirationStepForwardButton(ExpirationButtonBase):
         self._attr_icon = "mdi:chevron-right"
 
     async def async_press(self) -> None:
-        """Move last reset one unit later."""
-        await self.coordinator.async_step_last_reset_forward()
+        """Decrease remaining by moving last reset earlier."""
+        await self.coordinator.async_step_last_reset_back()
