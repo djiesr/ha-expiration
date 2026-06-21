@@ -43,6 +43,8 @@ UI strings for the config flow, options, entity names, and hub device name are p
 
 ## Entities per item
 
+<img width="339" height="538" alt="image" src="https://github.com/user-attachments/assets/089bd177-6ec4-4d65-9b79-723b21ca7c5a" />
+
 Entity IDs use the slug derived from the item name (example: `kitchen_sponge`). Actual IDs may vary slightly depending on your HA version and naming.
 
 | Entity | Type | Example value |
